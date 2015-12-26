@@ -1,7 +1,7 @@
 package = "flirt"
 version = "scm-0"
 source = {
-   url = "/home/kyle/src/love-libs/flirt"
+   url = "git://github.com/Alloyed/flirt"
 }
 description = {
    license = "MIT"
