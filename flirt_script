@@ -1,0 +1,456 @@
+#!/usr/bin/env lua
+--[[ generated on Sat Dec 26 15:06:29 2015
+Flirt is Copyright (c) 2015 Kyle Mclamb
+
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+claim that you wrote the original software. If you use this software
+in a product, an acknowledgment in the product documentation would be
+appreciated but is not required.
+
+2. Altered source versions must be plainly marked as such, and must not be
+misrepresented as being the original software.
+
+3. This notice may not be removed or altered from any source
+distribution.
+]]--
+do
+--- A module for loading LOVE conf.lua files.
+--
+-- @module loadconf
+
+local loadconf = {}
+
+local function xload(str, name, env)
+	local chunk, err
+	if setfenv then -- lua 5.1
+		chunk, err = loadstring(str, name)
+		if not chunk then return nil, err end
+		setfenv(chunk, env)
+	else -- lua 5.2, 5.3
+		chunk, err = load(str, name, "bt", env)
+		if not chunk then return nil, err end
+	end
+	return chunk
+end
+
+local sandbox = {
+	assert=assert,
+	error=error,
+	getmetatable=getmetatable,
+	ipairs=ipairs,
+	next=next,
+	pairs=pairs,
+	pcall=pcall,
+	print=print,
+	rawequal=rawequal,
+	rawget=rawget,
+	rawset=rawset,
+	select=select,
+	setmetatable=setmetatable,
+	tonumber=tonumber,
+	tostring=tostring,
+	type=type,
+	unpack=unpack,
+	_VERSION=_VERSION,
+	xpcall=xpcall,
+	coroutine=coroutine,
+	string=string,
+	table=table,
+	math=math,
+	os = {
+		clock=os.clock,
+		date=os.date,
+		difftime=os.difftime,
+		getenv=os.getenv,
+		time=os.time,
+		tmpname=os.tmpname
+	},
+	newproxy=os.newproxy
+}
+
+sandbox._G = sandbox
+
+local function merge(from, into)
+	for k, v in pairs(from) do
+		if type(v) == 'table' then
+			merge(v, into[k])
+		elseif not into[k] then
+			into[k] = v
+		end
+	end
+end
+
+--- Given the string contents of a conf.lua, returns a table containing the
+--  configuration it represents.
+--  @param str The contents of conf.lua
+--  @return The configuration table, or `nil, err` if an error occured
+function loadconf.parse_string(str)
+	local ok, err
+	local env = setmetatable({love = {}}, {__index = sandbox})
+	ok, err = pcall(xload, str, "conf.lua", env)
+	if not ok then
+		return nil, err
+	end
+	local chunk = err
+
+	ok, err = pcall(chunk)
+	if not ok then
+		return nil, err
+	end
+
+	if not env.love.conf then
+		return {} -- No configuration
+	end
+
+	local t = { window = {}, screen = {}, modules = {} }
+	ok, err = pcall(env.love.conf, t)
+	if ok then
+		if not t.version then
+			t.version = loadconf.latest_stable_version
+		end
+		if loadconf.defaults[t.version] then
+			--merge(loadconf.defaults[t.version], t)
+		end
+		return t
+	else
+		return nil, err
+	end
+end
+
+--- Given the filename of a valid conf.lua file, returns a table containing the
+--  configuration it represents.
+--  @param fname The path to the conf.lua file
+--  @return the configuration table, or `nil, err` if an error occured.
+function loadconf.parse_file(fname)
+	local f, str, err
+
+	f, err = io.open(fname, 'r')
+	if not f then return nil, err end
+
+	str, err = f:read('*a')
+	if not str then return nil, err end
+
+	f:close()
+
+	return loadconf.parse_string(str)
+end
+
+--- Given the filename of a .love archive, returns a table containing its
+--  configuration. Requires UnZip to be installed to your path.
+--  @param fname The path to the .love file
+--  @return the configuration table, or `nil, err` if an error occured.
+function loadconf.parse_archive(fname)
+	-- FIXME: use a proper cross-platform zip library
+	local f, err = io.popen(string.format("unzip -p %q conf.lua 2> /dev/null", fname))
+	if not f then return nil, err end
+
+	str, err = f:read('*a')
+	if not str then return nil, err end
+
+	f:close()
+
+	return loadconf.parse_string(str)
+end
+
+function loadconf.write(orig, changes)
+	error("TODO")
+end
+
+loadconf.defaults = {}
+
+-- default values for 0.9.2 {{{
+loadconf.defaults["0.9.2"] = {
+	identity = nil,
+	version = "0.9.2",
+	console = false,
+	window = {
+		title          = "Untitled",
+		icon           = nil,
+		width          = 800,
+		height         = 600,
+		borderless     = false,
+		resizable      = false,
+		minwidth       = 1,
+		minheight      = 1,
+		fullscreen     = false,
+		fullscreentype = "normal",
+		vsync          = true,
+		fsaa           = 0,
+		display        = 1,
+		highdpi        = false,
+		srgb           = false,
+		x              = nil,
+		y              = nil
+	},
+	modules = {
+		audio         = true,
+		event         = true,
+		graphics      = true,
+		image         = true,
+		joystick      = true,
+		keyboard      = true,
+		math          = true,
+		mouse         = true,
+		physics       = true,
+		sound         = true,
+		system        = true,
+		timer         = true,
+		window        = true,
+		thread        = true,
+	}
+}
+-- }}}
+
+-- default values for 0.8.0 {{{
+loadconf.defaults["0.8.0"] = {
+	identity = nil,
+	version = "0.8.0",
+	console = false,
+	release = false,
+	title = "Untitled",
+	author = "Unnamed",
+	screen = {
+		width = 800,
+		height = 600,
+		fullscreen = false,
+		vsync = true,
+		fsaa = 0
+	},
+	modules = {
+		audio     = true,
+		event     = true,
+		graphics  = true,
+		image     = true,
+		joystick  = true,
+		keyboard  = true,
+		mouse     = true,
+		physics   = true,
+		sound     = true,
+		timer     = true,
+		thread    = true
+	}
+}
+-- }}}
+
+package.loaded.loadconf = loadconf
+end
+do
+local config_path = string.format("%s/.config/flirt/conf.lua", os.getenv("HOME")) -- FIXME
+
+local config = {
+   stable = "0.10.0", -- versions past this number are considered prerelease
+}
+
+local function fail(...)
+   io.stderr:write("Error: " .. string.format(...) .. "\n")
+   io.stderr:flush()
+end
+
+local function log(...)
+   io.stdout:write("flirt: " .. string.format(...) .. "\n")
+   io.stdout:flush()
+end
+
+local function load_versions()
+   local chunk, err = loadfile(config_path)
+   if chunk then
+      local t = chunk()
+      for k, v in pairs(t) do
+         config[k] = v
+      end
+   end
+end
+
+local function save_versions()
+   assert(os.execute(("mkdir -p %q"):format(config_path:gsub("/conf.lua$", "")))) -- FIXME
+   local f = assert(io.open(config_path, 'w'))
+   local s_pairs = {}
+   for k, v in pairs(config) do
+      table.insert(s_pairs, string.format("[%q] = %q", k, v))
+   end
+   f:write("return {\n\t" .. table.concat(s_pairs, ",\n\t") .. "\n}")
+   f:close()
+   log("config saved to %q", config_path)
+end
+
+local loadconf = require 'loadconf'
+
+local function sopen(exec_str)
+   local f, err = io.popen(exec_str)
+   if not f then return nil, err end
+
+   str, err = f:read('*a')
+   if not str then return nil, err end
+
+   f:close()
+   return str
+end
+
+local function which(exe)
+   return sopen(string.format("which '%s' 2> /dev/null", exe)) -- FIXME
+end
+
+local names = {
+   "love",
+   "love07",
+   "love08",
+   "love09",
+   "love-hg"
+}
+
+local function trim(s)
+   return (s:gsub("^%s+",""):gsub("%s+$", ""))
+end
+
+-- Find version for a love exe by running a dummy project
+local function get_version_for(exe)
+   local dummy = "/tmp/flirt_dummy_project"
+   -- FIXME: delete later
+   os.execute(("mkdir -p %q"):format(dummy))
+
+   assert(io.open(dummy .. "/conf.lua", "w")):write([[
+   print(string.format('flirt(%d.%d.%d)', love._version_major, love._version_minor, love._version_revision))
+   os.exit()
+   ]])
+
+   local s = sopen(string.format("%q %q", exe, dummy))
+   if s and s ~= "" then
+      local v = s:match("flirt(%b())")
+      if v then
+	 return v:sub(2, -2)
+      end
+   end
+   return nil, ("invalid executable: %q"):format(exe)
+end
+
+local function add_exe(s)
+   local v, err = get_version_for(s)
+   if not v then
+      return v, err
+   end
+   log("found LOVE %s at %q", v, s)
+   config[v] = s
+   return true
+end
+
+local function guess()
+   for _, name in ipairs(names) do
+      local s = which(name)
+      if s and s ~= "" then
+	 s = trim(s)
+	 add_exe(s)
+      end
+   end
+end
+
+local function exists(fname)
+   local f, err = io.open(fname) -- FIXME: does not work in windows
+   if f then
+      f:close()
+      return true
+   end
+   return false
+end
+
+local function is_dir(fname)
+   return os.execute(string.format("test -d %q", fname)) or false -- FIXME
+end
+
+local function vsplit(v)
+   local maj, min, rev = string.match(v, "(%d+)%.(%d+)%.(%d+)")
+   return tonumber(maj), tonumber(min), tonumber(rev)
+end
+
+local function best_exe_for(version)
+   if config[version] then
+      return config[version]
+   end
+   local maj, min, rev = vsplit(version)
+   for v, path in pairs(config) do
+      if not v == 'stable' then
+	 local imaj, imin, irev = vsplit(v)
+	 if imaj == maj and imin == min and irev > rev then -- better patch
+	    return path
+	 end
+      end
+   end
+   return nil
+end
+
+local function gt(a, b)
+   if a == nil then
+      return false
+   elseif b == nil then
+      return true
+   end
+   local amaj, amin, arev = vsplit(a)
+   local bmaj, bmin, brev = vsplit(b)
+   if amaj ~= bmaj then
+      return amaj > bmaj
+   elseif amin ~= bmin then
+      return amin > bmin
+   else
+      return arev > brev
+   end
+end
+
+local function most_recent()
+   local c = nil
+   local stable = config.stable
+   for v, _ in pairs(config) do
+      if v ~= "stable" then
+	 if gt(v, c) and not gt(v, stable) then
+	    c = v
+	 end
+      end
+   end
+
+   return c
+end
+
+local function main(...)
+   load_versions()
+   assert(config.stable)
+
+   local fname = ...
+   local version = config.stable
+   if fname == "--autoconf" then
+      guess()
+      save_versions()
+      return
+   elseif fname == "--add-exe" then
+      assert(add_exe((select(2, ...))))
+      save_versions()
+      return
+   elseif fname ~= nil and exists(fname) then
+      if is_dir(fname) and exists(fname .. "/conf.lua") then
+	 version = assert(loadconf.parse_file(fname.."/conf.lua")).version
+      else
+	 version = assert(loadconf.parse_archive(fname)).version
+      end
+
+      if version == nil then -- no version specified
+	 version = most_recent()
+      end
+   end
+
+   local p = best_exe_for(version)
+   if not p then
+      fail("No LOVE executable for version " .. version)
+      return
+   end
+
+   os.execute(table.concat({p, ...}, " "))
+   return
+end
+
+main(...)
+end
