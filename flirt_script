@@ -1,5 +1,5 @@
 #!/usr/bin/env lua
---[[ generated on Sat Dec 26 16:29:39 2015 rev v0.1.0
+--[[ generated on Thu Dec 31 16:45:07 2015 rev v0.1.0-2-gdfdfd9a
 
 Flirt is Copyright (c) 2015 Kyle Mclamb
 
@@ -360,15 +360,17 @@ local function best_exe_for(version)
    if config[version] then
       return config[version]
    end
+
    local maj, min, rev = vsplit(version)
    for v, path in pairs(config) do
-      if not v == 'stable' then
+      if v ~= 'stable' then
          local imaj, imin, irev = vsplit(v)
          if imaj == maj and imin == min and irev > rev then -- better patch
             return path
          end
       end
    end
+
    return nil
 end
 

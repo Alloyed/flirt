@@ -131,15 +131,17 @@ local function best_exe_for(version)
    if config[version] then
       return config[version]
    end
+
    local maj, min, rev = vsplit(version)
    for v, path in pairs(config) do
-      if not v == 'stable' then
+      if v ~= 'stable' then
          local imaj, imin, irev = vsplit(v)
          if imaj == maj and imin == min and irev > rev then -- better patch
             return path
          end
       end
    end
+
    return nil
 end
 
