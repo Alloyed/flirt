@@ -5,7 +5,7 @@ Flirt is a small script for picking the appropriate version of LOVE to
 use for any given LOVE game. To run flirt, you'll need a Unix-like environment
 with the following commands:
 
-* lua (any version should be fine, but tested against 5.1)
+* lua 5.1
 * unzip
 * which
 * test
@@ -19,7 +19,7 @@ Using
 Flirt can be installed using luarocks:
 
 ```
-# luarocks install https://raw.githubusercontent.com/Alloyed/flirt/master/flirt-scm-0.rockspec
+# luarocks install flirt
 ```
 
 Or you can use a compiled, single-file version if you prefer:
