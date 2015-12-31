@@ -22,6 +22,8 @@ local function load_versions()
       for k, v in pairs(t) do
          config[k] = v
       end
+   else
+      return nil, err
    end
 end
 
@@ -41,7 +43,8 @@ end
 local loadconf = require 'loadconf'
 
 local function sopen(exec_str)
-   local f, err = io.popen(exec_str)
+   local f, str, err
+   f, err = io.popen(exec_str)
    if not f then return nil, err end
 
    str, err = f:read('*a')
@@ -110,7 +113,7 @@ local function guess()
 end
 
 local function exists(fname)
-   local f, err = io.open(fname) -- FIXME: does not work in windows
+   local f = io.open(fname) -- FIXME: does not work in windows
    if f then
       f:close()
       return true
@@ -183,7 +186,8 @@ end
 --  @return the configuration table, or `nil, err` if an error occured.
 local function parse_archive(fname)
    -- FIXME: use a proper cross-platform zip library
-   local f, err = io.popen(("unzip -p %q conf.lua 2> /dev/null"):format(fname))
+   local f, str, err
+   f, err = io.popen(("unzip -p %q conf.lua 2> /dev/null"):format(fname))
    if not f then return nil, err end
 
    str, err = f:read('*a')
