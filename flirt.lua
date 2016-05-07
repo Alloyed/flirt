@@ -1,9 +1,12 @@
+local loadconf = require 'loadconf'
+
 -- FIXME
 local config_path = ("%s/.config/flirt/conf.lua"):format(os.getenv("HOME"))
 
 local config = {
-   stable = "0.10.0", -- versions past this number are considered prerelease
+   stable = loadconf.stable_love, -- versions past this number are considered prerelease
 }
+assert(type(config.stable) == 'string')
 
 local function fail(...)
    io.stderr:write("Error: " .. string.format(...) .. "\n")
@@ -40,8 +43,6 @@ local function save_versions()
    log("config saved to %q", config_path)
 end
 
-local loadconf = require 'loadconf'
-
 local function sopen(exec_str)
    local f, str, err
    f, err = io.popen(exec_str)
@@ -63,6 +64,7 @@ local names = {
    "love07",
    "love08",
    "love09",
+   "love10",
    "love-hg"
 }
 
@@ -195,7 +197,10 @@ local function parse_archive(fname)
 
    f:close()
 
-   return loadconf.parse_string(str)
+   return loadconf.parse_string(str, "@"..fname.."/conf.lua", {
+      program = "flirt",
+      friendly = true
+   })
 end
 
 local function bash_escape(s)
@@ -229,7 +234,10 @@ local function main(...)
       return
    elseif fname ~= nil and exists(fname) then
       if is_dir(fname) and exists(fname .. "/conf.lua") then
-         version = assert(loadconf.parse_file(fname.."/conf.lua")).version
+         version = assert(loadconf.parse_file(fname.."/conf.lua", {
+            program = "flirt",
+            friendly = true
+         })).version
       else
          version = assert(parse_archive(fname)).version
       end

@@ -13,8 +13,8 @@ for.]],
    license = "MIT"
 }
 dependencies = {
-   "lua",
-   "loadconf ~> 0.1"
+   "lua ~> 5.1",
+   "loadconf ~> 0.2"
 }
 build = {
    type = "builtin",
