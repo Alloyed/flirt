@@ -72,26 +72,16 @@ local function trim(s)
    return (s:gsub("^%s+",""):gsub("%s+$", ""))
 end
 
--- Find version for a love exe by running a dummy project
 local function get_version_for(exe)
-   local dummy = "/tmp/flirt_dummy_project"
-   -- FIXME: delete later
-   os.execute(("mkdir -p %q"):format(dummy))
-
-   assert(io.open(dummy .. "/conf.lua", "w")):write([[
-   print(string.format('flirt(%d.%d.%d)',
-         love._version_major, love._version_minor, love._version_revision))
-   os.exit()
-   ]])
-
-   local s = sopen(string.format("%q %q", exe, dummy))
-   if s and s ~= "" then
-      local v = s:match("flirt(%b())")
+   local s = sopen(string.format("%q --version", exe))
+   if s then
+      local v = s:match("%d+%.%d+%.%d+")
       if v then
-         return v:sub(2, -2)
+         return v
       end
    end
-   return nil, ("invalid executable: %q"):format(exe)
+
+   return nil, ("invalid exectuable: %q"):format(exe)
 end
 
 local function add_exe(s)
