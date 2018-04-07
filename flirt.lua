@@ -65,6 +65,7 @@ local names = {
    "love08",
    "love09",
    "love10",
+   "love11",
    "love-hg"
 }
 

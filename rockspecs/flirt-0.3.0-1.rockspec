@@ -1,7 +1,8 @@
 package = "flirt"
-version = "scm-0"
+version = "0.3.0-1"
 source = {
-   url = "git://github.com/Alloyed/flirt"
+   url = "git://github.com/Alloyed/flirt",
+   tag = "v0.3.0"
 }
 description = {
    summary = "A wrapper for running love games",
