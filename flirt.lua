@@ -76,7 +76,7 @@ end
 local function get_version_for(exe)
    local s = sopen(string.format("%q --version", exe))
    if s then
-      local v = s:match("%d+%.%d+%.%d+")
+      local v = s:match("[%d.]+")  --This change take all the digits and . in sequence (now any version can be stored)
       if v then
          return v
       end
